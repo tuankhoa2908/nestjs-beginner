@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -8,9 +9,15 @@ import { User } from './schemas/user.schema';
 @Injectable()
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
-  // create(createUserDto: CreateUserDto) {
-  async create(email: string, password: string, name: string) {
-    const user = await this.userModel.create({ email, password, name });
+
+  async create(createUserDto: CreateUserDto) {
+    const user = await this.userModel.create({
+      email: createUserDto.email,
+      password: createUserDto.password,
+      name: createUserDto.name,
+      age: createUserDto?.age,
+      address: createUserDto?.address,
+    });
     return user;
   }
 
@@ -18,15 +25,21 @@ export class UsersService {
     return `This action returns all users`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  findOne(id: string) {
+    return this.userModel.findById(id);
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.userModel.findById(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const updatedUser: object = await user.updateOne(updateUserDto);
+    return updatedUser;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    await this.userModel.findByIdAndDelete(id);
+    return `Deleted user successfully`;
   }
 }
